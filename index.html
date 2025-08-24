@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой ИИ Чат</title>
+    <link rel="stylesheet" href="http://127.0.0.1:5500/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>💬 Мой ИИ Помощник (GLM-4.5-AIR)</h1>
+        
+        <div class="chat-container">
+            <div id="chat-messages" class="chat-messages">
+                <div class="message ai-message">
+                    Привет! Я ваш ИИ помощник на основе модели GLM-4.5-AIR. Чем могу помочь?
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <textarea id="user-input" placeholder="Введите ваше сообщение..." rows="3"></textarea>
+                <button onclick="sendMessage()">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const message = userInput.value.trim();
+            
+            if (!message) return;
+            
+            addMessage(message, 'user');
+            userInput.value = '';
+            
+            const loadingDiv = addMessage('ИИ думает...', 'ai-loading');
+            
+            try {
+                const response = await fetch('http://127.0.0.1:5500/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('chat-messages').removeChild(loadingDiv);
+                
+                if (data.response) {
+                    addMessage(data.response, 'ai');
+                } else if (data.error) {
+                    addMessage('Ошибка: ' + data.error, 'error');
+                }
+                
+            } catch (error) {
+                document.getElementById('chat-messages').removeChild(loadingDiv);
+                addMessage('Ошибка соединения с сервером', 'error');
+            }
+        }
+        
+        function addMessage(text, type) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = text;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            return messageDiv;
+        }
+        
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
